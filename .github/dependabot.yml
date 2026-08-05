@@ -11,6 +11,11 @@ updates:
     labels: [dependencies, dotnet]
     commit-message:
       prefix: deps
+    # Jellyfin 10.11 runs on .NET 9. Keep its shared Microsoft.Extensions
+    # dependencies on the matching major to avoid runtime assembly conflicts.
+    ignore:
+      - dependency-name: Microsoft.Extensions.*
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
