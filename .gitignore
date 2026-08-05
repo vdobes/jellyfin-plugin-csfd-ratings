@@ -1,0 +1,11 @@
+bin/
+obj/
+dist/
+*.user
+*.suo
+.vs/
+.idea/
+.DS_Store
+
+# FUSE leftovers from editing over a mounted filesystem
+.fuse_hidden*

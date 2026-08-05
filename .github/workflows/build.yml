@@ -1,0 +1,139 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        id: restore
+        run: |
+          set -o pipefail
+          dotnet restore Jellyfin.Plugin.CsfdRatings.sln 2>&1 | tee restore.log
+
+      # Keep going on failure so the summary step below reports every compiler error
+      # at once instead of just the first.
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          dotnet build Jellyfin.Plugin.CsfdRatings.sln \
+            -c Release --no-restore -v normal 2>&1 | tee build.log
+
+      - name: Summarise compiler errors
+        if: always()
+        run: |
+          {
+            echo "## Výsledek buildu"
+            echo
+            if [ "${{ steps.build.outcome }}" = "success" ]; then
+              echo ":white_check_mark: Build prošel."
+            else
+              echo ":x: Build selhal. Chyby (bez duplicit):"
+              echo
+              echo '```'
+              # Strip the absolute runner path so the lines stay short and copyable.
+              grep -oE '[^ ]+\.cs\([0-9]+,[0-9]+\): error [A-Z0-9]+: .*' build.log \
+                | sed 's#.*/src/#src/#; s#.*/tests/#tests/#' \
+                | sed 's/ \[\/home.*//' \
+                | sort -u | head -100
+              echo '```'
+              echo
+              echo "Celkem chyb: $(grep -cE ': error [A-Z0-9]+:' build.log || echo 0)"
+            fi
+
+            WARN=$(grep -oE '[^ ]+\.cs\([0-9]+,[0-9]+\): warning [A-Z0-9]+: .*' build.log \
+                   | sed 's#.*/src/#src/#; s#.*/tests/#tests/#' | sed 's/ \[\/home.*//' \
+                   | sort -u | head -40)
+            if [ -n "$WARN" ]; then
+              echo
+              echo "<details><summary>Varování</summary>"
+              echo
+              echo '```'
+              echo "$WARN"
+              echo '```'
+              echo
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if the build failed
+        if: steps.build.outcome != 'success'
+        run: exit 1
+
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          dotnet test Jellyfin.Plugin.CsfdRatings.sln \
+            -c Release --no-build --logger 'console;verbosity=normal' 2>&1 | tee test.log
+
+      - name: Summarise test failures
+        if: always()
+        run: |
+          {
+            echo
+            echo "## Testy"
+            echo
+            if [ "${{ steps.test.outcome }}" = "success" ]; then
+              grep -E 'Passed!|Total tests|Passed:' test.log | tail -3 || echo ":white_check_mark: Testy prošly."
+            else
+              echo ":x: Testy selhaly:"
+              echo
+              echo '```'
+              grep -E '^\s*(Failed|Error Message|Assert\.)' test.log | head -60 || tail -40 test.log
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build.log
+            test.log
+            restore.log
+          if-no-files-found: ignore
+
+      # Ship the dll together with meta.json: Jellyfin needs both in the plugin folder,
+      # so the artifact can be unzipped straight into plugins/ without hunting for files.
+      - name: Stage plugin folder
+        if: steps.build.outcome == 'success'
+        run: |
+          VERSION=$(python3 -c "import json;print(json.load(open('meta.json'))['version'])")
+          STAGE="dist/CsfdRatings_${VERSION}"
+          mkdir -p "$STAGE"
+          cp src/Jellyfin.Plugin.CsfdRatings/bin/Release/net9.0/Jellyfin.Plugin.CsfdRatings.dll "$STAGE/"
+          cp meta.json "$STAGE/"
+          echo "stage=$STAGE" >> "$GITHUB_ENV"
+          ls -la "$STAGE"
+
+      - name: Upload plugin
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CsfdRatings-plugin
+          path: ${{ env.stage }}
+          if-no-files-found: error
+
+      - name: Fail if tests failed
+        if: steps.test.outcome != 'success'
+        run: exit 1

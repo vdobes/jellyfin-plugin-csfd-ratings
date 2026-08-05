@@ -1,0 +1,13 @@
+{
+  "category": "Metadata",
+  "guid": "3f8c1a72-6b4d-4f2e-9a51-0c7d8e5b91a4",
+  "name": "ČSFD Ratings",
+  "description": "Zapisuje hodnocení z ČSFD do pole CommunityRating, aby bylo vidět ve všech klientech včetně Android TV a Infuse.",
+  "owner": "venca",
+  "overview": "ČSFD hodnocení jako nativní community rating",
+  "targetAbi": "10.11.0.0",
+  "framework": "net9.0",
+  "timestamp": "2026-08-05T00:00:00Z",
+  "version": "1.0.1.0",
+  "changelog": "Podpora API klíče sidecaru (hlavička x-api-key)."
+}

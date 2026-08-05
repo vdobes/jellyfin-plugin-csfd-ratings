@@ -1,0 +1,145 @@
+name: Release
+
+# Tag a commit to publish:
+#   git tag v1.0.0.0 && git push origin v1.0.0.0
+#
+# Produces a zip + MD5, attaches both to a GitHub Release, and regenerates
+# manifest.json on the main branch so Jellyfin can install and update the plugin
+# straight from the dashboard.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version, four parts (e.g. 1.0.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          # Jellyfin insists on a four part version.
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Version '$VERSION' must have four parts, e.g. 1.0.0.0" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: dotnet test Jellyfin.Plugin.CsfdRatings.sln -c Release
+
+      - name: Build
+        run: |
+          dotnet build src/Jellyfin.Plugin.CsfdRatings/Jellyfin.Plugin.CsfdRatings.csproj \
+            -c Release -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Package
+        id: package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          STAGE="dist/CsfdRatings_${VERSION}"
+          mkdir -p "$STAGE"
+
+          cp src/Jellyfin.Plugin.CsfdRatings/bin/Release/net9.0/Jellyfin.Plugin.CsfdRatings.dll "$STAGE/"
+
+          # Stamp the version and timestamp into meta.json.
+          python3 - "$STAGE/meta.json" "$VERSION" <<'PY'
+          import json, sys, datetime
+          out, version = sys.argv[1], sys.argv[2]
+          meta = json.load(open('meta.json', encoding='utf-8'))
+          meta['version'] = version
+          meta['timestamp'] = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+          json.dump(meta, open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+          PY
+
+          ZIP="dist/csfd-ratings_${VERSION}.zip"
+          (cd "$STAGE" && zip -qr "../csfd-ratings_${VERSION}.zip" .)
+          CHECKSUM=$(md5sum "$ZIP" | awk '{print $1}')
+
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+          echo "meta=$STAGE/meta.json" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          files: ${{ steps.package.outputs.zip }}
+          generate_release_notes: true
+
+      - name: Update manifest.json
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          CHECKSUM="${{ steps.package.outputs.checksum }}"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/csfd-ratings_${VERSION}.zip"
+          RELEASE_META="${{ steps.package.outputs.meta }}"
+
+          # The artifact above was built from the tagged commit. Update only the manifest on
+          # the latest main branch, without silently rebuilding the release from main.
+          git fetch origin main
+          git switch -C main origin/main
+
+          python3 - "$VERSION" "$CHECKSUM" "$URL" "$RELEASE_META" <<'PY'
+          import json, os, sys, datetime
+          version, checksum, url, meta_path = sys.argv[1:5]
+          meta = json.load(open(meta_path, encoding='utf-8'))
+
+          entry = {
+              'version': version,
+              'changelog': meta.get('changelog', ''),
+              'targetAbi': meta['targetAbi'],
+              'sourceUrl': url,
+              'checksum': checksum,
+              'timestamp': datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
+          }
+
+          if os.path.exists('manifest.json'):
+              manifest = json.load(open('manifest.json', encoding='utf-8'))
+          else:
+              manifest = [{
+                  'guid': meta['guid'],
+                  'name': meta['name'],
+                  'description': meta['description'],
+                  'overview': meta['overview'],
+                  'owner': meta['owner'],
+                  'category': meta['category'],
+                  'versions': [],
+              }]
+
+          versions = manifest[0].setdefault('versions', [])
+          versions = [v for v in versions if v['version'] != version]
+          versions.insert(0, entry)
+          manifest[0]['versions'] = versions
+
+          json.dump(manifest, open('manifest.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+          PY
+
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add manifest.json
+          git commit -m "Release ${VERSION}" || echo "manifest unchanged"
+          git push origin HEAD:main

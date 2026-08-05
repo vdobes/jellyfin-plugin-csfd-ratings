@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <title>ČSFD Ratings</title>
+</head>
+<body>
+<div id="CsfdRatingsConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-textarea">
+    <div data-role="content">
+        <div class="content-primary">
+
+            <!-- ============ Administrace ============ -->
+            <div class="verticalSection">
+                <h2 class="sectionTitle">Stav</h2>
+
+                <div id="CsfdStatusBox" class="fieldDescription"
+                     style="padding:1em;border:1px solid rgba(255,255,255,.15);border-radius:4px;line-height:1.7">
+                    Načítám…
+                </div>
+
+                <br/>
+
+                <div style="display:flex;flex-wrap:wrap;gap:.5em">
+                    <button is="emby-button" type="button" id="BtnTest" class="raised emby-button">
+                        <span>Test připojení</span>
+                    </button>
+                    <button is="emby-button" type="button" id="BtnRun" class="raised emby-button">
+                        <span>Načíst chybějící hodnocení</span>
+                    </button>
+                    <button is="emby-button" type="button" id="BtnExport" class="raised emby-button">
+                        <span>Vypsat nespárované do CSV</span>
+                    </button>
+                    <button is="emby-button" type="button" id="BtnResetReview" class="raised emby-button">
+                        <span>Zkusit nespárované znovu</span>
+                    </button>
+                    <button is="emby-button" type="button" id="BtnRestore" class="raised emby-button button-delete">
+                        <span>Obnovit původní hodnocení</span>
+                    </button>
+                </div>
+
+                <div id="CsfdActionResult" class="fieldDescription" style="margin-top:.75em"></div>
+            </div>
+
+            <br/>
+
+            <!-- ============ Nespárované ============ -->
+            <div class="verticalSection">
+                <h2 class="sectionTitle">K ručnímu párování</h2>
+                <div class="fieldDescription">
+                    Zkopíruj ČSFD ID kandidáta a vlož ho do pole níže ve tvaru
+                    <code>ItemId = csfdId</code>, nebo ho zadej přímo v editoru metadat filmu
+                    (pole ČSFD).
+                </div>
+                <div id="CsfdReviewList" style="margin-top:.75em"></div>
+            </div>
+
+            <br/>
+
+            <!-- ============ Nastavení ============ -->
+            <form id="CsfdRatingsConfigForm">
+                <h2 class="sectionTitle">Nastavení</h2>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="Enabled" name="Enabled" type="checkbox" is="emby-checkbox"/>
+                        <span>Plugin zapnutý</span>
+                    </label>
+                    <div class="fieldDescription">Když je vypnuto, neběží provider ani úlohy.</div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="DryRun" name="DryRun" type="checkbox" is="emby-checkbox"/>
+                        <span>Zkušební režim (nic nezapisovat)</span>
+                    </label>
+                    <div class="fieldDescription">
+                        Do logu se zapíše, co by se změnilo, ale databáze zůstane nedotčená.
+                        Doporučeno pro první běh.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ApiBaseUrl">Adresa sidecaru</label>
+                    <input id="ApiBaseUrl" name="ApiBaseUrl" type="text" is="emby-input"/>
+                    <div class="fieldDescription">
+                        node-csfd-api ve vnitřní Docker síti, například <code>http://csfd-api:3000</code>.
+                        Přednostně ji nech ve vnitřní síti; při zveřejnění vždy nastav API klíč.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ApiKey">API klíč sidecaru</label>
+                    <input id="ApiKey" name="ApiKey" type="password" is="emby-input" autocomplete="off"/>
+                    <div class="fieldDescription">
+                        Vyplň jen když má služba <code>csfd-api</code> nastavenou proměnnou
+                        <code>API_KEY</code>. Posílá se v hlavičce <code>x-api-key</code>.
+                        Prázdné = sidecar běží bez autentizace.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="RequestDelayMs">Prodleva mezi dotazy (ms)</label>
+                    <input id="RequestDelayMs" name="RequestDelayMs" type="number" is="emby-input" min="500"/>
+                    <div class="fieldDescription">Výchozí 2000. Níž nechoď.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="MaxRequestsPerWeek">Týdenní limit dotazů</label>
+                    <input id="MaxRequestsPerWeek" name="MaxRequestsPerWeek" type="number" is="emby-input" min="0"/>
+                    <div class="fieldDescription">
+                        Strop pro klouzavé okno sedmi dní. Po vyčerpání se běh ukončí a hodnocení
+                        zůstanou beze změny. 0 = bez limitu. Výchozí 2000.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="RequestTimeoutSeconds">Timeout dotazu (s)</label>
+                    <input id="RequestTimeoutSeconds" name="RequestTimeoutSeconds" type="number" is="emby-input" min="5"/>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="RefreshTtlDays">Platnost hodnocení (dny)</label>
+                    <input id="RefreshTtlDays" name="RefreshTtlDays" type="number" is="emby-input" min="1"/>
+                    <div class="fieldDescription">
+                        Po uplynutí se hodnocení načte znovu. Výchozí 90 dní.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="NotFoundRetryDays">Opakovat nenalezené po (dny)</label>
+                    <input id="NotFoundRetryDays" name="NotFoundRetryDays" type="number" is="emby-input" min="1"/>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="MaxItemsPerRun">Max. položek na jeden běh</label>
+                    <input id="MaxItemsPerRun" name="MaxItemsPerRun" type="number" is="emby-input" min="0"/>
+                    <div class="fieldDescription">0 = bez omezení. Pro první backfill zkus třeba 20.</div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="AllowYearToleranceWithDirector" name="AllowYearToleranceWithDirector"
+                               type="checkbox" is="emby-checkbox"/>
+                        <span>Tolerovat rozdíl roku o 1 při shodě režiséra</span>
+                    </label>
+                    <div class="fieldDescription">
+                        Bez shody režiséra se tolerance nepoužije. Nejednoznačné případy skončí
+                        vždy jako „k ručnímu párování“.
+                    </div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="PreserveOriginalRating" name="PreserveOriginalRating"
+                               type="checkbox" is="emby-checkbox"/>
+                        <span>Uchovat původní hodnocení</span>
+                    </label>
+                    <div class="fieldDescription">
+                        Původní CommunityRating se uloží, aby ho šlo vrátit tlačítkem
+                        „Obnovit původní hodnocení“. <strong>Vypnutím se přepis stane nevratným.</strong>
+                    </div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input id="SyncOnItemAdded" name="SyncOnItemAdded" type="checkbox" is="emby-checkbox"/>
+                        <span>Načíst hodnocení u nově přidaných filmů</span>
+                    </label>
+                    <div class="fieldDescription">Spustí se pár minut po dokončení skenu knihovny.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ManualMatches">Ruční párování</label>
+                    <textarea id="ManualMatches" name="ManualMatches" is="emby-textarea" rows="6"
+                              class="emby-textarea" style="width:100%"></textarea>
+                    <div class="fieldDescription">
+                        Jeden pár na řádek: <code>ItemId = csfdId</code>. Přijme i celou ČSFD URL.
+                        Řádky začínající <code>#</code> jsou poznámky. Má přednost před vším ostatním.
+                    </div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Uložit</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = '3f8c1a72-6b4d-4f2e-9a51-0c7d8e5b91a4';
+            var page = document.querySelector('#CsfdRatingsConfigPage');
+
+            function api(path, method) {
+                return ApiClient.ajax({
+                    type: method || 'GET',
+                    url: ApiClient.getUrl('Plugins/CsfdRatings/' + path),
+                    dataType: method === 'POST' ? undefined : 'json'
+                });
+            }
+
+            function esc(value) {
+                if (value === null || value === undefined) { return ''; }
+                return String(value)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function say(message, isError) {
+                var box = page.querySelector('#CsfdActionResult');
+                box.style.color = isError ? '#ff6b6b' : '';
+                box.textContent = message;
+            }
+
+            function renderStatus(s) {
+                var budget = s.WeeklyLimit === 0
+                    ? 'bez limitu'
+                    : s.WeeklyUsed + ' / ' + s.WeeklyLimit +
+                      ' (okno se obnoví ' + new Date(s.WeeklyResetsAt).toLocaleString() + ')';
+
+                var lastRun = s.LastRunUtc
+                    ? new Date(s.LastRunUtc).toLocaleString() + ' — ' + esc(s.LastRunSummary)
+                    : 'zatím neproběhlo';
+
+                page.querySelector('#CsfdStatusBox').innerHTML =
+                    '<strong>Filmů v knihovně:</strong> ' + s.MovieCount + '<br/>' +
+                    '<strong>S hodnocením:</strong> ' + s.Resolved + '<br/>' +
+                    '<strong>K ručnímu párování:</strong> ' + s.NeedsReview + '<br/>' +
+                    '<strong>Nenalezeno:</strong> ' + s.NotFound + '<br/>' +
+                    '<strong>Bez hodnocení na ČSFD:</strong> ' + s.NoRating + '<br/>' +
+                    '<strong>Chyby:</strong> ' + s.Errors + '<br/>' +
+                    '<strong>Týdenní limit:</strong> ' + budget + '<br/>' +
+                    '<strong>Poslední běh:</strong> ' + lastRun +
+                    (s.DryRun ? '<br/><strong style="color:#ffd166">Zkušební režim je zapnutý — nic se nezapisuje.</strong>' : '') +
+                    (s.Enabled ? '' : '<br/><strong style="color:#ff6b6b">Plugin je vypnutý.</strong>');
+            }
+
+            function renderReview(items) {
+                var host = page.querySelector('#CsfdReviewList');
+                if (!items || !items.length) {
+                    host.innerHTML = '<div class="fieldDescription">Nic nečeká na ruční párování.</div>';
+                    return;
+                }
+
+                var rows = items.map(function (i) {
+                    var candidates = (i.Candidates || []).map(function (c) {
+                        return '<code>' + esc(c.CsfdId) + '</code> ' + esc(c.Title) +
+                               ' (' + esc(c.Year || '?') + ')';
+                    }).join('<br/>') || '<span class="fieldDescription">žádní kandidáti</span>';
+
+                    return '<tr>' +
+                        '<td style="padding:.4em .8em .4em 0;vertical-align:top">' +
+                            esc(i.Title) + ' (' + esc(i.Year || '?') + ')' +
+                            '<br/><code style="font-size:.85em;opacity:.7">' + esc(i.ItemId) + '</code>' +
+                        '</td>' +
+                        '<td style="padding:.4em .8em .4em 0;vertical-align:top">' + esc(i.Status) + '</td>' +
+                        '<td style="padding:.4em 0;vertical-align:top">' + candidates + '</td>' +
+                        '</tr>';
+                }).join('');
+
+                host.innerHTML =
+                    '<table style="width:100%;border-collapse:collapse">' +
+                    '<thead><tr style="text-align:left;opacity:.7">' +
+                    '<th style="padding-right:.8em">Film</th><th style="padding-right:.8em">Stav</th>' +
+                    '<th>Kandidáti na ČSFD</th></tr></thead><tbody>' + rows + '</tbody></table>';
+            }
+
+            function refresh() {
+                api('Status').then(renderStatus, function () {
+                    page.querySelector('#CsfdStatusBox').textContent =
+                        'Stav se nepodařilo načíst. Je plugin správně nainstalovaný a server restartovaný?';
+                });
+                api('Review').then(renderReview, function () { /* ignore */ });
+            }
+
+            function queue(path, label) {
+                say('Spouštím: ' + label + '…');
+                api(path, 'POST').then(function () {
+                    say(label + ' — úloha zařazena. Průběh sleduj v Naplánovaných úlohách.');
+                    setTimeout(refresh, 3000);
+                }, function () {
+                    say(label + ' se nepodařilo spustit.', true);
+                });
+            }
+
+            page.addEventListener('pageshow', function () {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    page.querySelector('#Enabled').checked = config.Enabled;
+                    page.querySelector('#DryRun').checked = config.DryRun;
+                    page.querySelector('#ApiBaseUrl').value = config.ApiBaseUrl;
+                    page.querySelector('#ApiKey').value = config.ApiKey || '';
+                    page.querySelector('#RequestDelayMs').value = config.RequestDelayMs;
+                    page.querySelector('#MaxRequestsPerWeek').value = config.MaxRequestsPerWeek;
+                    page.querySelector('#RequestTimeoutSeconds').value = config.RequestTimeoutSeconds;
+                    page.querySelector('#RefreshTtlDays').value = config.RefreshTtlDays;
+                    page.querySelector('#NotFoundRetryDays').value = config.NotFoundRetryDays;
+                    page.querySelector('#MaxItemsPerRun').value = config.MaxItemsPerRun;
+                    page.querySelector('#AllowYearToleranceWithDirector').checked = config.AllowYearToleranceWithDirector;
+                    page.querySelector('#PreserveOriginalRating').checked = config.PreserveOriginalRating;
+                    page.querySelector('#SyncOnItemAdded').checked = config.SyncOnItemAdded;
+                    page.querySelector('#ManualMatches').value = config.ManualMatches || '';
+                    Dashboard.hideLoadingMsg();
+                    refresh();
+                });
+            });
+
+            page.querySelector('#BtnTest').addEventListener('click', function () {
+                say('Testuji…');
+                ApiClient.ajax({
+                    type: 'POST',
+                    url: ApiClient.getUrl('Plugins/CsfdRatings/TestConnection'),
+                    dataType: 'json'
+                }).then(function (r) {
+                    say(r.Message, !r.Success);
+                }, function () {
+                    say('Test se nepodařilo provést. Běží plugin a je server restartovaný?', true);
+                });
+            });
+
+            page.querySelector('#BtnRun').addEventListener('click', function () {
+                queue('Run', 'Načtení chybějících hodnocení');
+            });
+
+            page.querySelector('#BtnExport').addEventListener('click', function () {
+                queue('ExportReview', 'Výpis nespárovaných do CSV');
+            });
+
+            page.querySelector('#BtnResetReview').addEventListener('click', function () {
+                queue('ResetReview', 'Reset nespárovaných');
+            });
+
+            page.querySelector('#BtnRestore').addEventListener('click', function () {
+                Dashboard.confirm(
+                    'Opravdu vrátit původní CommunityRating u všech filmů? ČSFD hodnocení se tím přepíší zpět.',
+                    'Obnovit původní hodnocení',
+                    function (ok) {
+                        if (ok) { queue('Restore', 'Obnova původních hodnocení'); }
+                    });
+            });
+
+            page.querySelector('#CsfdRatingsConfigForm').addEventListener('submit', function (e) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    config.Enabled = page.querySelector('#Enabled').checked;
+                    config.DryRun = page.querySelector('#DryRun').checked;
+                    config.ApiBaseUrl = page.querySelector('#ApiBaseUrl').value;
+                    config.ApiKey = page.querySelector('#ApiKey').value;
+                    config.RequestDelayMs = parseInt(page.querySelector('#RequestDelayMs').value, 10);
+                    config.MaxRequestsPerWeek = parseInt(page.querySelector('#MaxRequestsPerWeek').value, 10);
+                    config.RequestTimeoutSeconds = parseInt(page.querySelector('#RequestTimeoutSeconds').value, 10);
+                    config.RefreshTtlDays = parseInt(page.querySelector('#RefreshTtlDays').value, 10);
+                    config.NotFoundRetryDays = parseInt(page.querySelector('#NotFoundRetryDays').value, 10);
+                    config.MaxItemsPerRun = parseInt(page.querySelector('#MaxItemsPerRun').value, 10);
+                    config.AllowYearToleranceWithDirector = page.querySelector('#AllowYearToleranceWithDirector').checked;
+                    config.PreserveOriginalRating = page.querySelector('#PreserveOriginalRating').checked;
+                    config.SyncOnItemAdded = page.querySelector('#SyncOnItemAdded').checked;
+                    config.ManualMatches = page.querySelector('#ManualMatches').value;
+
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        refresh();
+                    });
+                });
+
+                e.preventDefault();
+                return false;
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>
