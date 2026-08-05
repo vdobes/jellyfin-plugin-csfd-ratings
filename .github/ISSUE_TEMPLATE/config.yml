@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/vdobes/jellyfin-plugin-csfd-ratings/security/advisories/new
+    about: Report security issues privately; never include secrets in a public issue.
+  - name: Jellyfin documentation
+    url: https://jellyfin.org/docs/general/server/plugins/
+    about: General help with installing and managing Jellyfin plugins.

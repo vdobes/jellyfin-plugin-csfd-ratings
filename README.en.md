@@ -1,12 +1,15 @@
 <div align="center">
 
+<img src="docs/assets/csfd-ratings-banner.png" alt="ČSFD Ratings for Jellyfin" width="100%">
+
 # ČSFD Ratings for Jellyfin
 
 **Czech-Slovak film database ratings in Jellyfin — on every client, with no changes to the web UI.**
 
-[![Build](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/actions/workflows/build.yml/badge.svg)](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/actions/workflows/build.yml)
+[![Build](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/actions/workflows/build.yml/badge.svg)](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/vdobes/jellyfin-plugin-csfd-ratings?display_name=tag)](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/releases)
 [![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11-00A4DC)](https://jellyfin.org)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![License](https://img.shields.io/github/license/vdobes/jellyfin-plugin-csfd-ratings)](LICENSE)
 
 [Česky](README.md) · [Install](#install) · [Settings](#settings) · [Matching](#how-matching-works) · [Troubleshooting](#troubleshooting)
 
@@ -58,13 +61,13 @@ Fetching and writing are separate concerns. The provider runs after every metada
 | | |
 |---|---|
 | Name | `ČSFD Ratings` |
-| URL | `https://raw.githubusercontent.com/vdobes/jellyfin-csfd-rating-scrapper/main/manifest.json` |
+| URL | `https://raw.githubusercontent.com/vdobes/jellyfin-plugin-csfd-ratings/main/manifest.json` |
 
 Then **Catalogue → ČSFD Ratings → Install** and restart. Updates arrive automatically.
 
 ### Manually
 
-Download the `.zip` from [Releases](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/releases):
+Download the `.zip` from [Releases](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/releases):
 
 ```bash
 mkdir -p /path/to/jellyfin/config/plugins/CsfdRatings_1.0.1.0
@@ -220,8 +223,8 @@ Only items of type Movie are considered. Films in a library typed as Shows or Mi
 Requires the .NET 9 SDK.
 
 ```bash
-git clone https://github.com/vdobes/jellyfin-csfd-rating-scrapper.git
-cd jellyfin-csfd-rating-scrapper
+git clone https://github.com/vdobes/jellyfin-plugin-csfd-ratings.git
+cd jellyfin-plugin-csfd-ratings
 dotnet test Jellyfin.Plugin.CsfdRatings.sln
 ./build.sh --zip
 ```
@@ -235,6 +238,12 @@ git tag v1.0.2.0 && git push origin v1.0.2.0
 The pipeline builds from the tagged commit, runs the tests, creates a Release and appends the version to `manifest.json`.
 
 Issues and pull requests are welcome.
+
+---
+
+## Contributing
+
+Bug reports and feature requests have dedicated templates under [Issues](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/issues/new/choose). Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening your first pull request. Please do not disclose vulnerabilities publicly; follow [SECURITY.md](SECURITY.md) instead.
 
 ---
 

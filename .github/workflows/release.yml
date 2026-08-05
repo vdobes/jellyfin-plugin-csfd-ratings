@@ -19,9 +19,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -78,8 +83,10 @@ jobs:
           ZIP="dist/csfd-ratings_${VERSION}.zip"
           (cd "$STAGE" && zip -qr "../csfd-ratings_${VERSION}.zip" .)
           CHECKSUM=$(md5sum "$ZIP" | awk '{print $1}')
+          printf '%s  %s\n' "$CHECKSUM" "$(basename "$ZIP")" > "$ZIP.md5"
 
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+          echo "checksum_file=$ZIP.md5" >> "$GITHUB_OUTPUT"
           echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
           echo "meta=$STAGE/meta.json" >> "$GITHUB_OUTPUT"
 
@@ -88,8 +95,11 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
-          files: ${{ steps.package.outputs.zip }}
+          files: |
+            ${{ steps.package.outputs.zip }}
+            ${{ steps.package.outputs.checksum_file }}
           generate_release_notes: true
+          make_latest: true
 
       - name: Update manifest.json
         run: |

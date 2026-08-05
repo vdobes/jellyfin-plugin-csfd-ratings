@@ -1,12 +1,15 @@
 <div align="center">
 
+<img src="docs/assets/csfd-ratings-banner.png" alt="ČSFD Ratings pro Jellyfin" width="100%">
+
 # ČSFD Ratings pro Jellyfin
 
 **Hodnocení z ČSFD přímo v Jellyfinu — ve všech klientech, bez zásahů do webového rozhraní.**
 
-[![Build](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/actions/workflows/build.yml/badge.svg)](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/actions/workflows/build.yml)
+[![Build](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/actions/workflows/build.yml/badge.svg)](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/vdobes/jellyfin-plugin-csfd-ratings?display_name=tag)](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/releases)
 [![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11-00A4DC)](https://jellyfin.org)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![License](https://img.shields.io/github/license/vdobes/jellyfin-plugin-csfd-ratings)](LICENSE)
 
 [English](README.en.md) · [Instalace](#instalace) · [Nastavení](#nastavení) · [Párování](#jak-funguje-párování) · [Řešení problémů](#řešení-problémů)
 
@@ -58,13 +61,13 @@ Načítání a zápis jsou oddělené. Provider běží po každém refreshi met
 | | |
 |---|---|
 | Název | `ČSFD Ratings` |
-| URL | `https://raw.githubusercontent.com/vdobes/jellyfin-csfd-rating-scrapper/main/manifest.json` |
+| URL | `https://raw.githubusercontent.com/vdobes/jellyfin-plugin-csfd-ratings/main/manifest.json` |
 
 Pak **Katalog → ČSFD Ratings → Instalovat** a restart Jellyfinu. Aktualizace už chodí samy.
 
 ### Ručně
 
-Stáhni `.zip` z [Releases](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/releases) a rozbal do složky s pluginy:
+Stáhni `.zip` z [Releases](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/releases) a rozbal do složky s pluginy:
 
 ```bash
 mkdir -p /cesta/k/jellyfin/config/plugins/CsfdRatings_1.0.1.0
@@ -243,7 +246,7 @@ Plugin bere jen položky typu Film. Filmy v knihovně označené jako Seriály n
 <details>
 <summary><strong>Hodnocení po refreshi metadat zmizí</strong></summary>
 
-Nemělo by — provider ho po každém refreshi vrátí z cache. Když se to děje, pošli prosím kus logu do [Issues](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/issues).
+Nemělo by — provider ho po každém refreshi vrátí z cache. Když se to děje, pošli prosím kus logu do [Issues](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/issues).
 </details>
 
 ---
@@ -253,8 +256,8 @@ Nemělo by — provider ho po každém refreshi vrátí z cache. Když se to dě
 Potřebuješ .NET 9 SDK.
 
 ```bash
-git clone https://github.com/vdobes/jellyfin-csfd-rating-scrapper.git
-cd jellyfin-csfd-rating-scrapper
+git clone https://github.com/vdobes/jellyfin-plugin-csfd-ratings.git
+cd jellyfin-plugin-csfd-ratings
 dotnet test Jellyfin.Plugin.CsfdRatings.sln
 ./build.sh --zip
 ```
@@ -267,7 +270,13 @@ git tag v1.0.2.0 && git push origin v1.0.2.0
 
 Pipeline postaví plugin z commitu tagu, spustí testy, vytvoří Release a doplní verzi do `manifest.json`.
 
-Chyby a nápady patří do [Issues](https://github.com/vdobes/jellyfin-csfd-rating-scrapper/issues), pull requesty jsou vítané.
+Chyby a nápady patří do [Issues](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/issues), pull requesty jsou vítané.
+
+---
+
+## Zapojení do projektu
+
+Hlášení chyb a návrhy funkcí mají připravené šablony v [Issues](https://github.com/vdobes/jellyfin-plugin-csfd-ratings/issues/new/choose). Před prvním pull requestem si přečti [CONTRIBUTING.md](CONTRIBUTING.md). Bezpečnostní chyby neposílej veřejně — postup je v [SECURITY.md](SECURITY.md).
 
 ---
 

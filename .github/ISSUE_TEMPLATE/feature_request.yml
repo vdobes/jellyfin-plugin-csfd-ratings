@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest a focused improvement to ČSFD Ratings.
+title: "[Feature]: "
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What is difficult today, and who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the result rather than a specific implementation where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This relates to ČSFD ratings or matching in Jellyfin.
+          required: true
+        - label: I searched existing issues and discussions.
+          required: true
