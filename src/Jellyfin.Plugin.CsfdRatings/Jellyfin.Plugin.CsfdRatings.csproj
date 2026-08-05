@@ -27,7 +27,7 @@
     </PackageReference>
     <!-- IHttpClientFactory and AddHostedService are not guaranteed transitive; the host
          supplies the implementations at runtime, so exclude runtime assets. -->
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0">
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.18">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.18">
